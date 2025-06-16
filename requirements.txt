@@ -1,9 +1,6 @@
+streamlit
+tensorflow-cpu==2.13.0
 deepface==0.0.79
-tensorflow==2.11.0
-keras==2.11.0
-streamlit==1.25.0
-streamlit-webrtc==0.43.0
-opencv-python-headless==4.8.0.76
-pillow==9.5.0
-fpdf==1.7.2
-pytesseract==0.3.10
+opencv-python
+numpy
+pandas
