@@ -1,3 +1,6 @@
 [server]
 pythonVersion = "3.10"
 maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false
