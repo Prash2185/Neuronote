@@ -1,6 +1,8 @@
 # main.py
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
+import asyncio
+import logging
 import os
 from app.webcam_emotion import EmotionAnalyzer
 from app.report_generator import generate_report
@@ -10,6 +12,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 import time
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Page configuration
 st.set_page_config(page_title="NeuroNote", layout="centered")
@@ -26,6 +31,28 @@ if 'note_analysis' not in st.session_state:
 # Initialize session state for webrtc callbacks
 if '_components_callbacks' not in st.session_state:
     st.session_state._components_callbacks = {}
+
+# WebRTC configuration
+rtc_configuration = {
+    "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}],
+    "iceTransportPolicy": "all",
+}
+
+# Define callback for connection state changes
+async def on_connection_state_changed(pc, state):
+    logging.info(f"Connection state changed to {state}")
+    if state == "failed" or state == "closed":
+        await pc.close()
+        
+ctx = webrtc_streamer(
+    key="emotion",
+    mode=WebRtcMode.SENDRECV,
+    rtc_configuration=rtc_configuration,
+    media_stream_constraints={"video": True, "audio": False},
+    async_processing=True,
+    video_processor_factory=EmotionAnalyzer,
+    on_connection_state_changed=on_connection_state_changed
+)
 
 # User input
 receiver_email = st.text_input("📧 Enter your email to receive the report")
@@ -57,14 +84,6 @@ def analyze_notes(file):
 
 # 🎥 Webcam Emotion Detection
 st.header("😊 Live Emotion Detection")
-ctx = webrtc_streamer(
-    key="emotion",
-    video_processor_factory=EmotionAnalyzer,
-    media_stream_constraints={"video": True, "audio": False}
-)
-
-if ctx and ctx.video_processor:
-    st.session_state.emotion_analyzer = ctx.video_processor
 
 # Generate Report Button
 if st.button("📊 Generate Comprehensive Report"):
@@ -147,3 +166,7 @@ if st.button("📧 Send Report via Email"):
             st.success("📧 Email sent successfully!")
         except Exception as e:
             st.error(f"❌ Failed to send email: {str(e)}")
+
+# Cleanup when the app is closed
+if not ctx.state.playing:
+    st.session_state.pop('_components_callbacks', None)
