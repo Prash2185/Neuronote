@@ -23,6 +23,10 @@ if 'emotion_data' not in st.session_state:
 if 'note_analysis' not in st.session_state:
     st.session_state.note_analysis = None
 
+# Initialize session state for webrtc callbacks
+if '_components_callbacks' not in st.session_state:
+    st.session_state._components_callbacks = {}
+
 # User input
 receiver_email = st.text_input("📧 Enter your email to receive the report")
 
