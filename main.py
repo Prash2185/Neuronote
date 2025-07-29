@@ -1,7 +1,7 @@
 # main.py
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
-from webrtc_utils import get_ice_config, handle_webrtc_error
+from webrtc_utils import get_ice_config, handle_webrtc_error, EmotionProcessor, connection_state
 import logging
 import os
 from app.webcam_emotion import EmotionAnalyzer
@@ -45,11 +45,16 @@ try:
         rtc_configuration=get_ice_config(),
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
-        video_processor_factory=EmotionAnalyzer,
+        video_processor_factory=EmotionProcessor,
+        async_transform=True
     )
 
+    # Show connection status
     if ctx.state.playing:
-        st.success("Stream connected successfully")
+        if connection_state.is_connected:
+            st.success("Stream connected and processing emotions")
+        else:
+            st.warning(f"Connection state: {connection_state.last_state}")
     
 except Exception as e:
     st.error(handle_webrtc_error(e))
