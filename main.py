@@ -45,8 +45,7 @@ try:
         rtc_configuration=get_ice_config(),
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
-        video_processor_factory=EmotionProcessor,
-        async_transform=True
+        video_processor_factory=EmotionProcessor
     )
 
     # Show connection status

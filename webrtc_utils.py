@@ -10,37 +10,46 @@ logger = logging.getLogger(__name__)
 class EmotionProcessor(VideoProcessorBase):
     def __init__(self):
         self.model = None
+        self.face_cascade = None
         try:
-            # Pre-load the model
             self.model = DeepFace.build_model("Emotion")
+            self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         except Exception as e:
-            logger.error(f"Error loading emotion model: {e}")
+            logger.error(f"Error initializing models: {e}")
             
-    def recv(self, frame):
+    async def recv_async(self, frame):
         img = frame.to_ndarray(format="bgr24")
         try:
-            # Detect face
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            if self.face_cascade is None or self.model is None:
+                return img
+                
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
             
             for (x, y, w, h) in faces:
                 face = img[y:y+h, x:x+w]
-                # Analyze emotion
-                if self.model is not None:
-                    face = cv2.resize(face, (48, 48))
-                    face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
-                    face = np.expand_dims(face, axis=0)
-                    emotion = DeepFace.analyze(face, actions=['emotion'], enforce_detection=False)
-                    # Draw results
+                face = cv2.resize(face, (48, 48))
+                face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+                face = np.expand_dims(face, axis=0)
+                
+                try:
+                    emotion = DeepFace.analyze(face, actions=['emotion'], 
+                                            enforce_detection=False,
+                                            detector_backend='opencv')
                     cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                    cv2.putText(img, emotion[0]['dominant_emotion'], (x, y-10), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                              
+                    cv2.putText(img, emotion[0]['dominant_emotion'], 
+                              (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 
+                              0.9, (0, 255, 0), 2)
+                except Exception as e:
+                    logger.error(f"Error analyzing emotion: {e}")
+                    
         except Exception as e:
             logger.error(f"Error processing frame: {e}")
             
         return img
+        
+    def recv(self, frame):
+        return self.recv_async(frame)
 
 def get_ice_config() -> Dict[str, Any]:
     return {
