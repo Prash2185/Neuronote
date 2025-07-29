@@ -38,12 +38,6 @@ rtc_configuration = {
     "iceTransportPolicy": "all",
 }
 
-# Define callback for connection state changes
-async def on_connection_state_changed(pc, state):
-    logging.info(f"Connection state changed to {state}")
-    if state == "failed" or state == "closed":
-        await pc.close()
-        
 ctx = webrtc_streamer(
     key="emotion",
     mode=WebRtcMode.SENDRECV,
@@ -51,8 +45,13 @@ ctx = webrtc_streamer(
     media_stream_constraints={"video": True, "audio": False},
     async_processing=True,
     video_processor_factory=EmotionAnalyzer,
-    on_connection_state_changed=on_connection_state_changed
 )
+
+# Handle connection state
+if ctx.state.playing:
+    st.success("Stream started successfully")
+else:
+    st.warning("Stream not connected")
 
 # User input
 receiver_email = st.text_input("📧 Enter your email to receive the report")
