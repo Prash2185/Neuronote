@@ -1,7 +1,7 @@
 # main.py
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
-import asyncio
+from webrtc_utils import get_ice_config, handle_webrtc_error
 import logging
 import os
 from app.webcam_emotion import EmotionAnalyzer
@@ -38,20 +38,26 @@ rtc_configuration = {
     "iceTransportPolicy": "all",
 }
 
-ctx = webrtc_streamer(
-    key="emotion",
-    mode=WebRtcMode.SENDRECV,
-    rtc_configuration=rtc_configuration,
-    media_stream_constraints={"video": True, "audio": False},
-    async_processing=True,
-    video_processor_factory=EmotionAnalyzer,
-)
+try:
+    ctx = webrtc_streamer(
+        key="emotion",
+        mode=WebRtcMode.SENDRECV,
+        rtc_configuration=get_ice_config(),
+        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True,
+        video_processor_factory=EmotionAnalyzer,
+    )
 
-# Handle connection state
-if ctx.state.playing:
-    st.success("Stream started successfully")
-else:
-    st.warning("Stream not connected")
+    if ctx.state.playing:
+        st.success("Stream connected successfully")
+    
+except Exception as e:
+    st.error(handle_webrtc_error(e))
+    logging.exception("WebRTC error occurred")
+
+# Cleanup
+if 'ctx' in locals() and not ctx.state.playing:
+    st.session_state.pop('_components_callbacks', None)
 
 # User input
 receiver_email = st.text_input("📧 Enter your email to receive the report")
@@ -165,7 +171,3 @@ if st.button("📧 Send Report via Email"):
             st.success("📧 Email sent successfully!")
         except Exception as e:
             st.error(f"❌ Failed to send email: {str(e)}")
-
-# Cleanup when the app is closed
-if not ctx.state.playing:
-    st.session_state.pop('_components_callbacks', None)
