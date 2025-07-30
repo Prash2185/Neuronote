@@ -12,6 +12,8 @@ class EmotionProcessor(VideoProcessorBase):
         self.model = None
         self.face_cascade = None
         self.connection_alive = True
+        self.reconnect_attempts = 0
+        self.max_reconnects = 3
         try:
             self.model = DeepFace.build_model("Emotion")
             self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -20,7 +22,12 @@ class EmotionProcessor(VideoProcessorBase):
     
     def on_ended(self):
         self.connection_alive = False
-        logger.info("Video connection ended")
+        if self.reconnect_attempts < self.max_reconnects:
+            self.reconnect_attempts += 1
+            logger.info(f"Attempting reconnection {self.reconnect_attempts}/{self.max_reconnects}")
+            self.connection_alive = True
+        else:
+            logger.warning("Max reconnection attempts reached")
             
     async def recv_async(self, frame):
         if not self.connection_alive:
@@ -61,19 +68,21 @@ class EmotionProcessor(VideoProcessorBase):
 def get_ice_config() -> Dict[str, Any]:
     return {
         "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": "stun:stun.l.google.com:19302"},
             {
                 "urls": [
-                    "turn:openrelay.metered.ca:443",
-                    "turn:openrelay.metered.ca:443?transport=tcp"
+                    "turn:a.relay.metered.ca:80",
+                    "turn:a.relay.metered.ca:80?transport=tcp",
+                    "turn:a.relay.metered.ca:443",
+                    "turn:a.relay.metered.ca:443?transport=tcp",
                 ],
-                "username": "openrelayproject",
-                "credential": "openrelayproject"
+                "username": "d2fa004774e6a69bb05f899c",
+                "credential": "L6NJtfhwYVW6dR2B",
             }
         ],
-        "iceTransportPolicy": "all",
+        "iceTransportPolicy": "relay",
         "bundlePolicy": "max-bundle",
-        "iceCandidatePoolSize": 1,
+        "rtcpMuxPolicy": "require",
         "sdpSemantics": "unified-plan"
     }
 

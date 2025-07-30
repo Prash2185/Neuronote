@@ -48,13 +48,20 @@ try:
         rtc_configuration=get_ice_config(),
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
-        video_processor_factory=EmotionProcessor
+        video_processor_factory=EmotionProcessor,
+        translations={
+            "start": "Start camera",
+            "stop": "Stop camera",
+            "select_device": "Select video device",
+        }
     )
 
+    # Connection monitoring
     if ctx.state.playing:
-        status_placeholder.success("Stream Active - Processing emotions")
+        status_placeholder.success("Camera connected - Processing emotions")
+        time.sleep(0.1)  # Small delay to ensure UI updates
     else:
-        status_placeholder.warning("Stream not connected. Please check your camera permissions.")
+        status_placeholder.warning("Camera disconnected or not started")
 
 except Exception as e:
     st.error(f"Connection error: {str(e)}")

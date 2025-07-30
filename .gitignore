@@ -8,6 +8,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyc
 
 # Distribution / packaging
 dist/
@@ -26,6 +27,7 @@ build/
 # Local development settings
 .env
 .env.local
+.env*
 
 # System Files
 .DS_Store
@@ -34,6 +36,13 @@ Thumbs.db
 # Model files (if any)
 *.h5
 *.pkl
+.deepface/
 
 # Logs
 *.log
+
+# Coverage
+.coverage
+
+# Streamlit
+.streamlit/secrets.toml
