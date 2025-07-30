@@ -39,6 +39,9 @@ rtc_configuration = {
 }
 
 try:
+    st.title("Emotion Detection")
+    status_placeholder = st.empty()
+    
     ctx = webrtc_streamer(
         key="emotion",
         mode=WebRtcMode.SENDRECV,
@@ -48,15 +51,13 @@ try:
         video_processor_factory=EmotionProcessor
     )
 
-    # Show connection status
     if ctx.state.playing:
-        if connection_state.is_connected:
-            st.success("Stream connected and processing emotions")
-        else:
-            st.warning(f"Connection state: {connection_state.last_state}")
-    
+        status_placeholder.success("Stream Active - Processing emotions")
+    else:
+        status_placeholder.warning("Stream not connected. Please check your camera permissions.")
+
 except Exception as e:
-    st.error(handle_webrtc_error(e))
+    st.error(f"Connection error: {str(e)}")
     logging.exception("WebRTC error occurred")
 
 # Cleanup

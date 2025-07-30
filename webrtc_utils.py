@@ -11,13 +11,20 @@ class EmotionProcessor(VideoProcessorBase):
     def __init__(self):
         self.model = None
         self.face_cascade = None
+        self.connection_alive = True
         try:
             self.model = DeepFace.build_model("Emotion")
             self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         except Exception as e:
             logger.error(f"Error initializing models: {e}")
+    
+    def on_ended(self):
+        self.connection_alive = False
+        logger.info("Video connection ended")
             
     async def recv_async(self, frame):
+        if not self.connection_alive:
+            return None
         img = frame.to_ndarray(format="bgr24")
         try:
             if self.face_cascade is None or self.model is None:
@@ -54,27 +61,20 @@ class EmotionProcessor(VideoProcessorBase):
 def get_ice_config() -> Dict[str, Any]:
     return {
         "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
             {
                 "urls": [
-                    "stun:stun.l.google.com:19302",
-                    "stun:stun1.l.google.com:19302",
-                    "stun:stun2.l.google.com:19302",
-                    "stun:stun3.l.google.com:19302",
-                    "stun:stun.stunprotocol.org:3478"
-                ]
-            },
-            {
-                # Free TURN server - replace with your own in production
-                "urls": "turn:openrelay.metered.ca:80",
+                    "turn:openrelay.metered.ca:443",
+                    "turn:openrelay.metered.ca:443?transport=tcp"
+                ],
                 "username": "openrelayproject",
                 "credential": "openrelayproject"
             }
         ],
         "iceTransportPolicy": "all",
         "bundlePolicy": "max-bundle",
-        "iceCandidatePoolSize": 10,
-        "iceConnectionTimeoutInSec": 15,
-        "iceRestartEnabled": True
+        "iceCandidatePoolSize": 1,
+        "sdpSemantics": "unified-plan"
     }
 
 # Add connection state tracker
